@@ -9,6 +9,7 @@
 Request to ```/lunch/[date]``` for recipe on date.
 
 date format: ```Y-m-d```
+
 **Example:** ```/lunch/2019-03-25```
 
 ##### Note
