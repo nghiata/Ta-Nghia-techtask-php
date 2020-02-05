@@ -14,17 +14,23 @@ class LunchController extends AbstractController
 
     public function __construct(KernelInterface $appKernel)
     {
-        $this->appKernel = $appKernel;
-
-        $ingredientFinder = new Finder;
-        $ingredientFinder->files()->in($this->appKernel->getProjectDir() . '/dist')->name('ingredient.json');
-        $ingredient_obj = new stdClass;
-        foreach ($ingredientFinder as $file) {
-            $ingredient_content = $file->getContents();
-            $ingredient_obj = \json_decode($ingredient_content);
-        }
-        $this->ingredients = $ingredient_obj;
+        $this->appKernel = $appKernel;        
+        $this->ingredients = $this->initJsonData('ingredient.json');
+        $this->recipes = $this->initJsonData('recipe.json');
     }
+
+    private function initJsonData($fileName)
+    {
+        $finder = new Finder;
+        $finder->files()->in($this->appKernel->getProjectDir() . '/dist')->name($fileName);
+        $obj = new stdClass;
+        foreach ($finder as $file) {
+            $contents = $file->getContents();
+            $obj = \json_decode($contents);
+        }
+
+        return $obj;
+    }    
 
     private function getIngredient($use_by)
     {
@@ -52,29 +58,23 @@ class LunchController extends AbstractController
 
     private function getRecipe($ingredients, $use_by)
     {
-        $recipeFilder = new Finder;
-        $recipeFilder->files()->in($this->appKernel->getProjectDir() . '/dist')->name('recipe.json');
         $recipes = [];
-        foreach ($recipeFilder as $file) {
-            $recipe_content = $file->getContents();
-            $recipe_obj = \json_decode($recipe_content);
-            
-            $recipes['freshest'] = array_values(array_filter($recipe_obj->recipes, function($recipe) use($ingredients, $use_by) {
-                $diff = array_diff($recipe->ingredients, $ingredients);
-                return count($diff) == 0 && $this->isFreshIngredient($recipe->ingredients, $use_by);
-            }));
-            $recipes['freshest'] = array_map(function($recipe) {
-                return $recipe->title;
-            }, $recipes['freshest']);            
-            
-            $recipes['oldest'] = array_values(array_filter($recipe_obj->recipes, function($recipe) use($ingredients, $use_by) {
-                $diff = array_diff($recipe->ingredients, $ingredients);
-                return count($diff) == 0 && !$this->isFreshIngredient($recipe->ingredients, $use_by);
-            }));
-            $recipes['oldest'] = array_map(function($recipe) {
-                return $recipe->title;
-            }, $recipes['oldest']);            
-        }
+        $recipe_obj = $this->recipes;
+        $recipes['freshest'] = array_values(array_filter($recipe_obj->recipes, function($recipe) use($ingredients, $use_by) {
+            $diff = array_diff($recipe->ingredients, $ingredients);
+            return count($diff) == 0 && $this->isFreshIngredient($recipe->ingredients, $use_by);
+        }));
+        $recipes['freshest'] = array_map(function($recipe) {
+            return $recipe->title;
+        }, $recipes['freshest']);            
+        
+        $recipes['oldest'] = array_values(array_filter($recipe_obj->recipes, function($recipe) use($ingredients, $use_by) {
+            $diff = array_diff($recipe->ingredients, $ingredients);
+            return count($diff) == 0 && !$this->isFreshIngredient($recipe->ingredients, $use_by);
+        }));
+        $recipes['oldest'] = array_map(function($recipe) {
+            return $recipe->title;
+        }, $recipes['oldest']);      
 
         return $recipes['freshest'] || $recipes['oldest'] ? $recipes : [];
     }
