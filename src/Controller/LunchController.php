@@ -14,19 +14,20 @@ class LunchController extends AbstractController
 
     public function __construct(KernelInterface $appKernel)
     {
-        $this->appKernel = $appKernel;        
-        $this->ingredients = $this->initJsonData('ingredient.json');
-        $this->recipes = $this->initJsonData('recipe.json');
+        $this->appKernel = $appKernel;
+        $jsonData = $this->initJsonData('*.json');
+        $this->ingredients = $jsonData[0] ?? '';
+        $this->recipes = $jsonData[1] ?? '';
     }
 
     private function initJsonData($fileName)
     {
         $finder = new Finder;
         $finder->files()->in($this->appKernel->getProjectDir() . '/dist')->name($fileName);
-        $obj = new stdClass;
+        $obj = [];
         foreach ($finder as $file) {
             $contents = $file->getContents();
-            $obj = \json_decode($contents);
+            $obj[] = \json_decode($contents);
         }
 
         return $obj;
